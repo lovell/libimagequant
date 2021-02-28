@@ -767,6 +767,12 @@ LIQ_EXPORT liq_result *liq_quantize_image(liq_attr *attr, liq_image *img)
     return result;
 }
 
+LIQ_EXPORT liq_error liq_image_quantize(liq_image *const img, liq_attr *const attr, liq_result **result)
+{
+    *result = liq_quantize_image(attr, img);
+    return result ? LIQ_OK : LIQ_NOT_READY;
+}
+
 LIQ_EXPORT liq_error liq_set_dithering_level(liq_result *res, float dither_level)
 {
     if (!CHECK_STRUCT_TYPE(res, liq_result)) return LIQ_INVALID_POINTER;
