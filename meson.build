@@ -1,16 +1,39 @@
-project('imagequant', 'c',
+project(
+  'imagequant',
+  'c',
   version : '2.4.1',
   license : 'BSD-2-Clause',
+  meson_version : '>=0.48',
+  default_options : [
+    'c_std=c99',
+  ],
 )
 
-if (host_machine.cpu_family() == 'x86_64')
+compiler = meson.get_compiler('c')
+
+if compiler.get_id() == 'gcc' or compiler.get_id() == 'clang'
+  add_project_arguments(
+    '-Wno-misleading-indentation',
+    '-Wno-attributes',
+    language : 'c',
+  )
+endif
+
+if host_machine.cpu_family() == 'x86_64'
   add_project_arguments(
     '-DUSE_SSE=1',
     language : 'c',
   )
 endif
 
-m = meson.get_compiler('c').find_library('m')
+m = compiler.find_library(
+  'm',
+  required: false,
+)
+openmp = dependency(
+  'openmp',
+  required: false,
+)
 
 lib = library(
   'imagequant',
@@ -22,7 +45,10 @@ lib = library(
   'pam.c',
   'viter.c',
   install : true,
-  dependencies : [m],
+  dependencies : [
+    m,
+    openmp,
+  ],
 )
 
 install_headers('libimagequant.h')

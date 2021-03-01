@@ -17,3 +17,5 @@ jobs:
       - uses: BSFishy/meson-build@v1.0.2
         with:
           action: build
+          meson-version: "0.57.1"
+          ninja-version: "1.10.0.post2"
