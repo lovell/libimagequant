@@ -15,6 +15,7 @@ if compiler.get_id() == 'gcc' or compiler.get_id() == 'clang'
   add_project_arguments(
     '-Wno-misleading-indentation',
     '-Wno-attributes',
+    '-Wno-unknown-pragmas',
     language : 'c',
   )
 endif
@@ -30,10 +31,6 @@ m = compiler.find_library(
   'm',
   required: false,
 )
-openmp = dependency(
-  'openmp',
-  required: false,
-)
 
 lib = library(
   'imagequant',
@@ -47,7 +44,6 @@ lib = library(
   install : true,
   dependencies : [
     m,
-    openmp,
   ],
 )
 

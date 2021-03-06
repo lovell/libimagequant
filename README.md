@@ -6,7 +6,6 @@ This is a fork of the [BSD-2-Clause](COPYRIGHT) licensed
 ## Changes
 
 * Supports building and cross-compiling via [meson](https://mesonbuild.com/)
-* Supports multi-threading when using gcc version 9 or later
 * Adds a facade for the `liq_image_quantize` function
 * Increases default speed to `5`
 
