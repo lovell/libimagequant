@@ -11,6 +11,11 @@ project(
 
 compiler = meson.get_compiler('c')
 
+add_project_arguments(
+  '-DNDEBUG=1',
+  language : 'c',
+)
+
 if compiler.get_id() == 'gcc' or compiler.get_id() == 'clang'
   add_project_arguments(
     '-Wno-misleading-indentation',
