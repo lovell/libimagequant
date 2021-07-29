@@ -446,7 +446,7 @@ static void adjust_histogram(hist_item *achv, const colormap *map, const struct 
 
 static f_pixel averagepixels(unsigned int clrs, const hist_item achv[], const float min_opaque_val, const f_pixel center)
 {
-    double r = 0, g = 0, b = 0, a = 0, new_a=0, sum = 0;
+    float r = 0, g = 0, b = 0, a = 0, new_a=0, sum = 0;
     float maxa = 0;
 
     // first find final opacity in order to blend colors at that opacity
@@ -467,7 +467,7 @@ static f_pixel averagepixels(unsigned int clrs, const hist_item achv[], const fl
     sum=0;
     // reverse iteration for cache locality with previous loop
     for(int i = clrs-1; i >= 0; i--) {
-        double tmp, weight = 1.0f;
+        float tmp, weight = 1.0f;
         f_pixel px = achv[i].acolor;
 
         /* give more weight to colors that are further away from average
