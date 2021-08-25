@@ -160,7 +160,7 @@ static void liq_verbose_printf_flush(liq_attr *attr)
 #if USE_SSE
 inline static bool is_sse_available()
 {
-#if (defined(__x86_64__) || defined(__amd64))
+#if (defined(__x86_64__) || defined(__amd64) || defined(__EMSCRIPTEN__))
     return true;
 #else
     int a,b,c,d;
