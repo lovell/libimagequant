@@ -182,7 +182,7 @@ LIQ_PRIVATE struct acolorhash_table *pam_allocacolorhash(unsigned int maxcolors,
     ++j; \
 }
 
-LIQ_PRIVATE histogram *pam_acolorhashtoacolorhist(const struct acolorhash_table *acht, const double gamma, void* (*malloc)(size_t), void (*free)(void*))
+LIQ_PRIVATE histogram *pam_acolorhashtoacolorhist(const struct acolorhash_table *acht, const double gamma, const float gamma_lut[256], void* (*malloc)(size_t), void (*free)(void*))
 {
     histogram *hist = malloc(sizeof(hist[0]));
     if (!hist || !acht) return NULL;
@@ -193,9 +193,6 @@ LIQ_PRIVATE histogram *pam_acolorhashtoacolorhist(const struct acolorhash_table 
         .ignorebits = acht->ignorebits,
     };
     if (!hist->achv) return NULL;
-
-    float gamma_lut[256];
-    to_f_set_gamma(gamma_lut, gamma);
 
     /* Limit perceptual weight to 1/10th of the image surface area to prevent
        a single color from dominating all others. */

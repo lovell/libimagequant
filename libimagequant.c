@@ -86,6 +86,7 @@ struct liq_image {
     f_pixel fixed_colors[256];
     unsigned short fixed_colors_count;
     bool free_pixels, free_rows, free_rows_internal;
+    float gamma_lut[256];
 };
 
 typedef struct liq_remapping_result {
@@ -99,6 +100,7 @@ typedef struct liq_remapping_result {
     double gamma, palette_error;
     float dither_level;
     bool use_dither_map;
+    float gamma_lut[256];
 } liq_remapping_result;
 
 struct liq_result {
@@ -113,6 +115,7 @@ struct liq_result {
     double gamma, palette_error;
     int min_posterization_output;
     bool use_dither_map, fast_palette;
+    float gamma_lut[256];
 };
 
 static liq_result *pngquant_quantize(histogram *hist, const liq_attr *options, const liq_image *img);
@@ -320,6 +323,7 @@ LIQ_EXPORT liq_error liq_set_output_gamma(liq_result* res, double gamma)
     }
 
     res->gamma = gamma;
+    to_f_set_gamma(res->gamma_lut, res->gamma);
     return LIQ_OK;
 }
 
@@ -448,9 +452,7 @@ LIQ_EXPORT liq_error liq_image_add_fixed_color(liq_image *img, liq_color color) 
     if (!CHECK_STRUCT_TYPE(img, liq_image)) return LIQ_INVALID_POINTER;
     if (img->fixed_colors_count > 255) return LIQ_BUFFER_TOO_SMALL;
 
-    float gamma_lut[256];
-    to_f_set_gamma(gamma_lut, img->gamma);
-    img->fixed_colors[img->fixed_colors_count++] = to_f(gamma_lut, (rgba_pixel){
+    img->fixed_colors[img->fixed_colors_count++] = to_f(img->gamma_lut, (rgba_pixel){
         .r = color.r,
         .g = color.g,
         .b = color.b,
@@ -495,6 +497,7 @@ static liq_image *liq_image_create_internal(liq_attr *attr, rgba_pixel* rows[], 
         .row_callback_user_info = row_callback_user_info,
         .min_opaque_val = attr->min_opaque_val,
     };
+    to_f_set_gamma(img->gamma_lut, img->gamma);
 
     if (!rows || attr->min_opaque_val < 1.f) {
         img->temp_row = attr->malloc(sizeof(img->temp_row[0]) * width * omp_get_max_threads());
@@ -653,10 +656,8 @@ static const f_pixel *liq_image_get_row_f(liq_image *img, unsigned int row)
 {
     if (!img->f_pixels) {
         if (img->temp_f_row) {
-            float gamma_lut[256];
-            to_f_set_gamma(gamma_lut, img->gamma);
             f_pixel *row_for_thread = img->temp_f_row + img->width * omp_get_thread_num();
-            convert_row_to_f(img, row_for_thread, row, gamma_lut);
+            convert_row_to_f(img, row_for_thread, row, img->gamma_lut);
             return row_for_thread;
         }
 
@@ -669,10 +670,8 @@ static const f_pixel *liq_image_get_row_f(liq_image *img, unsigned int row)
             return liq_image_get_row_f(img, row);
         }
 
-        float gamma_lut[256];
-        to_f_set_gamma(gamma_lut, img->gamma);
         for(unsigned int i=0; i < img->height; i++) {
-            convert_row_to_f(img, &img->f_pixels[i*img->width], i, gamma_lut);
+            convert_row_to_f(img, &img->f_pixels[i*img->width], i, img->gamma_lut);
         }
     }
     return img->f_pixels + img->width * row;
@@ -805,6 +804,7 @@ static liq_remapping_result *liq_remapping_result_create(liq_result *result)
         .gamma = result->gamma,
         .palette = pam_duplicate_colormap(result->palette),
     };
+    to_f_set_gamma(res->gamma_lut, res->gamma);
     return res;
 }
 
@@ -943,11 +943,8 @@ inline static unsigned int posterize_channel(unsigned int color, unsigned int bi
     return (color & ~((1<<bits)-1)) | (color >> (8-bits));
 }
 
-static void set_rounded_palette(liq_palette *const dest, colormap *const map, const double gamma, unsigned int posterize)
+static void set_rounded_palette(liq_palette *const dest, colormap *const map, const double gamma, const float gamma_lut[256], unsigned int posterize)
 {
-    float gamma_lut[256];
-    to_f_set_gamma(gamma_lut, gamma);
-
     dest->count = map->colors;
     for(unsigned int x = 0; x < map->colors; ++x) {
         rgba_pixel px = to_rgb(gamma, map->palette[x].acolor);
@@ -976,7 +973,7 @@ LIQ_EXPORT const liq_palette *liq_get_palette(liq_result *result)
     }
 
     if (!result->int_palette.count) {
-        set_rounded_palette(&result->int_palette, result->palette, result->gamma, result->min_posterization_output);
+        set_rounded_palette(&result->int_palette, result->palette, result->gamma, result->gamma_lut, result->min_posterization_output);
     }
     return &result->int_palette;
 }
@@ -1273,7 +1270,7 @@ static histogram *get_histogram(liq_image *input_image, const liq_attr *options)
         liq_image_free_rgba_source(input_image); // bow can free the RGBA source if copy has been made in f_pixels
     }
 
-    histogram *hist = pam_acolorhashtoacolorhist(acht, input_image->gamma, options->malloc, options->free);
+    histogram *hist = pam_acolorhashtoacolorhist(acht, input_image->gamma, input_image->gamma_lut, options->malloc, options->free);
     pam_freeacolorhash(acht);
     if (hist) {
         liq_verbose_printf(options, "  made histogram...%d colors found", hist->size);
@@ -1631,6 +1628,7 @@ static liq_result *pngquant_quantize(histogram *hist, const liq_attr *options, c
         .gamma = img->gamma,
         .min_posterization_output = options->min_posterization_output,
     };
+    to_f_set_gamma(result->gamma_lut, result->gamma);
     return result;
 }
 
@@ -1684,7 +1682,7 @@ LIQ_EXPORT liq_error liq_write_remapped_image_rows(liq_result *quant, liq_image 
 
     float remapping_error = result->palette_error;
     if (result->dither_level == 0) {
-        set_rounded_palette(&result->int_palette, result->palette, result->gamma, quant->min_posterization_output);
+        set_rounded_palette(&result->int_palette, result->palette, result->gamma, result->gamma_lut, quant->min_posterization_output);
         remapping_error = remap_to_palette(input_image, row_pointers, result->palette, quant->fast_palette);
     } else {
         const bool generate_dither_map = result->use_dither_map && (input_image->edges && !input_image->dither_map);
@@ -1695,7 +1693,7 @@ LIQ_EXPORT liq_error liq_write_remapped_image_rows(liq_result *quant, liq_image 
         }
 
         // remapping above was the last chance to do voronoi iteration, hence the final palette is set after remapping
-        set_rounded_palette(&result->int_palette, result->palette, result->gamma, quant->min_posterization_output);
+        set_rounded_palette(&result->int_palette, result->palette, result->gamma, result->gamma_lut, quant->min_posterization_output);
 
         remap_to_palette_floyd(input_image, row_pointers, result->palette,
             MAX(remapping_error*2.4, 16.f/256.f), result->use_dither_map, generate_dither_map, result->dither_level);
