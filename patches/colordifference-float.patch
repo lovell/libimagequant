@@ -6,12 +6,7 @@ Subject: [PATCH] colordifference_stdc: use float as in SSE
 The SSE implementation of the function uses single-precision float, whereas this one goes for.... double all over the place.
 
 Extremely unscientific comparisons on godbolt (https://gcc.godbolt.org/z/oa3hP5ffs) shows that both Clang and GCC do much better generating code when float is used.
----
- pam.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/pam.h b/pam.h
-index 8756615..0c72392 100644
 --- a/pam.h
 +++ b/pam.h
 @@ -135,12 +135,12 @@ inline static rgba_pixel f_to_rgb(const float gamma, const f_pixel px)
