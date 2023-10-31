@@ -1,0 +1,22 @@
+From f6e7073c47597c0d3c3c04ec560672fd24a8e70b Mon Sep 17 00:00:00 2001
+From: Kleis Auke Wolthuizen <github@kleisauke.nl>
+Date: Wed, 25 Aug 2021 10:50:00 +0200
+Subject: [PATCH] Enable SIMD specific code on WebAssembly
+
+---
+ libimagequant.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libimagequant.c b/libimagequant.c
+index 0e8bae8..c1c9836 100644
+--- a/libimagequant.c
++++ b/libimagequant.c
+@@ -160,7 +160,7 @@ static void liq_verbose_printf_flush(liq_attr *attr)
+ #if USE_SSE
+ inline static bool is_sse_available()
+ {
+-#if (defined(__x86_64__) || defined(__amd64))
++#if (defined(__x86_64__) || defined(__amd64) || defined(__EMSCRIPTEN__))
+     return true;
+ #else
+     int a,b,c,d;
