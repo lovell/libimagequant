@@ -52,6 +52,13 @@ lib = library(
   ],
 )
 
+test_imagequant = executable(
+  'test_imagequant',
+  'test/test.c',
+  link_with : lib
+)
+test('imagequant', test_imagequant)
+
 install_headers('libimagequant.h')
 
 import('pkgconfig').generate(
