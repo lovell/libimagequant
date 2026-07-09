@@ -28,7 +28,7 @@ jobs:
         with:
           python-version: "3.14"
       - run: python -m pip install meson ninja
-      - run: meson setup builddir --buildtype=release
+      - run: meson setup _build --buildtype=release
         env:
           CFLAGS: ${{ matrix.cflags }}
       - run: meson compile -C _build
