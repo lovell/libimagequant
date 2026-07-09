@@ -1,0 +1,40 @@
+diff --git a/pam.h b/pam.h
+index 00d46c0..21bf64e 100644
+--- a/pam.h
++++ b/pam.h
+@@ -64,6 +64,9 @@
+ #if defined(__SSE4_1__)
+ #include <smmintrin.h>
+ #endif
++#if defined(__ARM_NEON)
++#include <arm_neon.h>
++#endif
+ 
+ #if defined(__GNUC__) || defined (__llvm__)
+ #define ALWAYS_INLINE __attribute__((always_inline)) inline
+@@ -219,6 +222,25 @@ inline static float colordifference(f_pixel px, f_pixel py)
+     const float res = _mm_cvtss_f32(sum);
+     assert(fabs(res - colordifference_stdc(px,py)) < 0.001);
+     return res;
++#elif defined(__ARM_NEON)
++    float32x4_t vpx = vld1q_f32((const float*)&px);
++    float32x4_t vpy = vld1q_f32((const float*)&py);
++
++    /* y.a - x.a (lane 0 is alpha) */
++    const float a_diff = vgetq_lane_f32(vpy, 0) - vgetq_lane_f32(vpx, 0);
++    const float32x4_t alphas = vdupq_n_f32(a_diff);
++
++    float32x4_t onblack = vsubq_f32(vpx, vpy); /* x - y */
++    float32x4_t onwhite = vaddq_f32(onblack, alphas); /* x - y + (y.a - x.a) */
++
++    onblack = vmulq_f32(onblack, onblack);
++    onwhite = vmulq_f32(onwhite, onwhite);
++    const float32x4_t max = vaddq_f32(onwhite, onblack);
++
++    /* sum r,g,b (lanes 1,2,3) */
++    const float res = vgetq_lane_f32(max, 1) + vgetq_lane_f32(max, 2) + vgetq_lane_f32(max, 3);
++    assert(fabs(res - colordifference_stdc(px,py)) < 0.001);
++    return res;
+ #else
+     return colordifference_stdc(px,py);
+ #endif
