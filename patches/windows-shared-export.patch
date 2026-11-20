@@ -1,0 +1,17 @@
+diff --git a/libimagequant.h b/libimagequant.h
+index 977a411..64aed33 100644
+--- a/libimagequant.h
++++ b/libimagequant.h
+@@ -6,8 +6,12 @@
+ #define LIBIMAGEQUANT_H
+ 
+ #ifndef LIQ_EXPORT
++#if defined(_WIN32) && defined(LIQ_BUILDING_SHARED)
++#define LIQ_EXPORT __declspec(dllexport)
++#else
+ #define LIQ_EXPORT extern
+ #endif
++#endif
+ 
+ #define LIQ_VERSION 20401
+ #define LIQ_VERSION_STRING "2.4.1"

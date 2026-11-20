@@ -32,6 +32,13 @@ if host_machine.cpu_family() == 'x86_64'
   )
 endif
 
+if host_machine.system() == 'windows' and get_option('default_library') != 'static'
+  add_project_arguments(
+    '-DLIQ_BUILDING_SHARED',
+    language : 'c',
+  )
+endif
+
 m = compiler.find_library(
   'm',
   required: false,
