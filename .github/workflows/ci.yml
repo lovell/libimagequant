@@ -21,6 +21,10 @@ jobs:
             cflags: "-msse4.1"
           - os: ubuntu-26.04-arm
           - os: windows-2025
+          - os: windows-2025
+            setup-args: "--vsenv"
+          - os: windows-2025
+            setup-args: "--vsenv --default-library=static"
           - os: windows-11-arm
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -28,7 +32,7 @@ jobs:
         with:
           python-version: "3.14"
       - run: python -m pip install meson ninja
-      - run: meson setup _build --buildtype=release
+      - run: meson setup _build --buildtype=release ${{ matrix.setup-args }}
         env:
           CFLAGS: ${{ matrix.cflags }}
       - run: meson compile -C _build
