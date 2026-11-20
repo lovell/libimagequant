@@ -134,7 +134,7 @@ static void liq_verbose_printf(const liq_attr *context, const char *fmt, ...)
         int required_space = vsnprintf(NULL, 0, fmt, va)+1; // +\0
         va_end(va);
 
-        char buf[required_space];
+        char *buf = alloca(required_space);
         va_start(va, fmt);
         vsnprintf(buf, required_space, fmt, va);
         va_end(va);
@@ -160,7 +160,7 @@ static void liq_verbose_printf_flush(liq_attr *attr)
 #if USE_SSE
 inline static bool is_sse_available()
 {
-#if (defined(__x86_64__) || defined(__amd64) || defined(__EMSCRIPTEN__))
+#if (defined(__x86_64__) || defined(_M_X64) || defined(__amd64) || defined(__EMSCRIPTEN__))
     return true;
 #else
     int a,b,c,d;
@@ -992,7 +992,7 @@ static float remap_to_palette(liq_image *const input_image, unsigned char *const
     struct nearest_map *const n = nearest_init(map, fast);
 
     const unsigned int max_threads = omp_get_max_threads();
-    viter_state average_color[(VITER_CACHE_LINE_GAP+map->colors) * max_threads];
+    viter_state *average_color = alloca(sizeof(viter_state) * (VITER_CACHE_LINE_GAP+map->colors) * max_threads);
     viter_init(map, max_threads, average_color);
 
     #if __GNUC__ >= 9

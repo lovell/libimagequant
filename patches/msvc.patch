@@ -1,0 +1,107 @@
+diff --git a/libimagequant.c b/libimagequant.c
+index c1c9836..2b26a31 100644
+--- a/libimagequant.c
++++ b/libimagequant.c
+@@ -134,7 +134,7 @@ static void liq_verbose_printf(const liq_attr *context, const char *fmt, ...)
+         int required_space = vsnprintf(NULL, 0, fmt, va)+1; // +\0
+         va_end(va);
+ 
+-        char buf[required_space];
++        char *buf = alloca(required_space);
+         va_start(va, fmt);
+         vsnprintf(buf, required_space, fmt, va);
+         va_end(va);
+@@ -160,7 +160,7 @@ static void liq_verbose_printf_flush(liq_attr *attr)
+ #if USE_SSE
+ inline static bool is_sse_available()
+ {
+-#if (defined(__x86_64__) || defined(__amd64) || defined(__EMSCRIPTEN__))
++#if (defined(__x86_64__) || defined(_M_X64) || defined(__amd64) || defined(__EMSCRIPTEN__))
+     return true;
+ #else
+     int a,b,c,d;
+@@ -992,7 +992,7 @@ static float remap_to_palette(liq_image *const input_image, unsigned char *const
+     struct nearest_map *const n = nearest_init(map, fast);
+ 
+     const unsigned int max_threads = omp_get_max_threads();
+-    viter_state average_color[(VITER_CACHE_LINE_GAP+map->colors) * max_threads];
++    viter_state *average_color = alloca(sizeof(viter_state) * (VITER_CACHE_LINE_GAP+map->colors) * max_threads);
+     viter_init(map, max_threads, average_color);
+ 
+     #if __GNUC__ >= 9
+diff --git a/mediancut.c b/mediancut.c
+index ad5da56..ca13dc0 100644
+--- a/mediancut.c
++++ b/mediancut.c
+@@ -316,7 +316,7 @@ static bool total_box_error_below_target(double target_mse, struct box bv[], uns
+ LIQ_PRIVATE colormap *mediancut(histogram *hist, const float min_opaque_val, unsigned int newcolors, const double target_mse, const double max_mse, void* (*malloc)(size_t), void (*free)(void*))
+ {
+     hist_item *achv = hist->achv;
+-    struct box bv[newcolors];
++    struct box *bv = alloca(sizeof(struct box) * newcolors);
+ 
+     /*
+      ** Set up the initial box.
+diff --git a/nearest.c b/nearest.c
+index 22366f9..77332cf 100644
+--- a/nearest.c
++++ b/nearest.c
+@@ -48,7 +48,7 @@ static int compareradius(const void *ap, const void *bp)
+ 
+ static struct head build_head(f_pixel px, const colormap *map, unsigned int num_candidates, mempool *m, float error_margin, bool skip_index[], unsigned int *skipped)
+ {
+-    struct sorttmp colors[map->colors];
++    struct sorttmp *colors = alloca(sizeof(struct sorttmp) * map->colors);
+     unsigned int colorsused=0;
+ 
+     for(unsigned int i=0; i < map->colors; i++) {
+@@ -58,7 +58,7 @@ static struct head build_head(f_pixel px, const colormap *map, unsigned int num_
+         colorsused++;
+     }
+ 
+-    qsort(&colors, colorsused, sizeof(colors[0]), compareradius);
++    qsort(colors, colorsused, sizeof(colors[0]), compareradius);
+     assert(colorsused < 2 || colors[0].radius <= colors[1].radius); // closest first
+ 
+     num_candidates = MIN(colorsused, num_candidates);
+@@ -124,7 +124,7 @@ LIQ_PRIVATE struct nearest_map *nearest_init(const colormap *map, bool fast)
+ 
+     unsigned int skipped=0;
+     assert(map->colors > 0);
+-    bool skip_index[map->colors]; for(unsigned int j=0; j < map->colors; j++) skip_index[j]=false;
++    bool *skip_index = alloca(sizeof(bool) * map->colors); for(unsigned int j=0; j < map->colors; j++) skip_index[j]=false;
+ 
+     // floats and colordifference calculations are not perfect
+     const float error_margin = fast ? 0 : 8.f/256.f/256.f;
+diff --git a/pam.h b/pam.h
+index 21bf64e..03a7d1e 100644
+--- a/pam.h
++++ b/pam.h
+@@ -19,6 +19,14 @@
+ #include <math.h>
+ #include <assert.h>
+ #include <stdlib.h>
++#ifdef _WIN32
++#include <malloc.h>
++#ifndef alloca
++#define alloca _alloca
++#endif
++#elif !defined(__FreeBSD__)
++#include <alloca.h>
++#endif
+ #include <stdbool.h>
+ 
+ #ifndef MAX
+diff --git a/viter.c b/viter.c
+index 9d01ca9..66c081c 100644
+--- a/viter.c
++++ b/viter.c
+@@ -64,7 +64,7 @@ LIQ_PRIVATE void viter_finalize(colormap *map, const unsigned int max_threads, c
+ LIQ_PRIVATE double viter_do_iteration(histogram *hist, colormap *const map, const float min_opaque_val, viter_callback callback, const bool fast_palette)
+ {
+     const unsigned int max_threads = omp_get_max_threads();
+-    viter_state average_color[(VITER_CACHE_LINE_GAP+map->colors) * max_threads];
++    viter_state *average_color = alloca(sizeof(viter_state) * (VITER_CACHE_LINE_GAP+map->colors) * max_threads);
+     viter_init(map, max_threads, average_color);
+     struct nearest_map *const n = nearest_init(map, fast_palette);
+     hist_item *const achv = hist->achv;
