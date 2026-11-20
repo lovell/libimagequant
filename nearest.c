@@ -48,7 +48,7 @@ static int compareradius(const void *ap, const void *bp)
 
 static struct head build_head(f_pixel px, const colormap *map, unsigned int num_candidates, mempool *m, float error_margin, bool skip_index[], unsigned int *skipped)
 {
-    struct sorttmp colors[map->colors];
+    struct sorttmp *colors = alloca(sizeof(struct sorttmp) * map->colors);
     unsigned int colorsused=0;
 
     for(unsigned int i=0; i < map->colors; i++) {
@@ -58,7 +58,7 @@ static struct head build_head(f_pixel px, const colormap *map, unsigned int num_
         colorsused++;
     }
 
-    qsort(&colors, colorsused, sizeof(colors[0]), compareradius);
+    qsort(colors, colorsused, sizeof(colors[0]), compareradius);
     assert(colorsused < 2 || colors[0].radius <= colors[1].radius); // closest first
 
     num_candidates = MIN(colorsused, num_candidates);
@@ -124,7 +124,7 @@ LIQ_PRIVATE struct nearest_map *nearest_init(const colormap *map, bool fast)
 
     unsigned int skipped=0;
     assert(map->colors > 0);
-    bool skip_index[map->colors]; for(unsigned int j=0; j < map->colors; j++) skip_index[j]=false;
+    bool *skip_index = alloca(sizeof(bool) * map->colors); for(unsigned int j=0; j < map->colors; j++) skip_index[j]=false;
 
     // floats and colordifference calculations are not perfect
     const float error_margin = fast ? 0 : 8.f/256.f/256.f;

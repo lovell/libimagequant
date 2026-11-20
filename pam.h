@@ -19,6 +19,14 @@
 #include <math.h>
 #include <assert.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#include <malloc.h>
+#ifndef alloca
+#define alloca _alloca
+#endif
+#elif !defined(__FreeBSD__)
+#include <alloca.h>
+#endif
 #include <stdbool.h>
 
 #ifndef MAX
