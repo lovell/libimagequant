@@ -6,7 +6,11 @@
 #define LIBIMAGEQUANT_H
 
 #ifndef LIQ_EXPORT
+#if defined(_WIN32) && defined(LIQ_BUILDING_SHARED)
+#define LIQ_EXPORT __declspec(dllexport)
+#else
 #define LIQ_EXPORT extern
+#endif
 #endif
 
 #define LIQ_VERSION 20401

@@ -32,6 +32,11 @@ if host_machine.cpu_family() == 'x86_64'
   )
 endif
 
+lib_c_args = []
+if host_machine.system() == 'windows' and get_option('default_library') != 'static'
+  lib_c_args += '-DLIQ_BUILDING_SHARED'
+endif
+
 m = compiler.find_library(
   'm',
   required: false,
@@ -46,6 +51,7 @@ lib = library(
   'nearest.c',
   'pam.c',
   'viter.c',
+  c_args : lib_c_args,
   install : true,
   dependencies : [
     m,
