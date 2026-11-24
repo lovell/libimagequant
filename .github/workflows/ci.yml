@@ -4,13 +4,13 @@ on:
   - pull_request
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     name: Build on ${{ matrix.os }} with ${{ matrix.cflags }} ${{ matrix.setup-args }}
     runs-on: ${{ matrix.os }}
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-      cancel-in-progress: true
     strategy:
       matrix:
         include:
